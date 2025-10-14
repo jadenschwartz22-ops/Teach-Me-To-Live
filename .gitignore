@@ -29,3 +29,4 @@ fastlane/screenshots
 .env
 # Uncomment to keep it out of the repo:
 # GoogleService-Info.plist
+GoogleService-Info.plist
