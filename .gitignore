@@ -69,5 +69,9 @@ node_modules/
 service-account.json
 **/service-account*.json
 
+# Apple Push Notification keys (NEVER commit these!)
+*.p8
+*.p12
+
 # dataconnect generated files
 .dataconnect
