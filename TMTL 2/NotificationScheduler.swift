@@ -10,32 +10,16 @@ enum NotificationScheduler {
     center.removePendingNotificationRequests(withIdentifiers: ["WipeDayTomorrow", "WipeDayToday"])
   }
 
-  static func scheduleWisdomReady(at date: Date) {
-    let center = UNUserNotificationCenter.current()
-    center.getNotificationSettings { s in
-      guard s.authorizationStatus == .authorized else { return }
-      var cal = Calendar.current
-      cal.timeZone = TimeZone(identifier: "America/Denver")!
-      let comps = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
-
-      let content = UNMutableNotificationContent()
-      content.title = "Post Wisdom Ready"
-      content.body  = "Your wait is over, share new wisdom now!"
-      content.sound = .default
-
-      let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-      let request = UNNotificationRequest(
-        identifier: "WisdomReady-\(Int(date.timeIntervalSince1970))",
-        content: content,
-        trigger: trigger
-      )
-      center.add(request, withCompletionHandler: nil)
-    }
-  }
-
+  /// Posting is unlimited, so the old "you may post again" reminder no longer
+  /// applies. Cancels any request left pending from a previous version and
+  /// clears the stored cooldown so nothing re-arms it.
   static func scheduleWisdomReadyIfPending() {
-    let ts = UserDefaults.standard.double(forKey: "nextWisdomSubmission")
-    guard ts > Date().timeIntervalSince1970 else { return }
-    scheduleWisdomReady(at: Date(timeIntervalSince1970: ts))
+    let center = UNUserNotificationCenter.current()
+    center.getPendingNotificationRequests { requests in
+      let stale = requests.map(\.identifier).filter { $0.hasPrefix("WisdomReady-") }
+      guard !stale.isEmpty else { return }
+      center.removePendingNotificationRequests(withIdentifiers: stale)
+    }
+    UserDefaults.standard.removeObject(forKey: "nextWisdomSubmission")
   }
 }

@@ -4,8 +4,6 @@ import UserNotifications
 struct AddWisdomView: View {
     // Developer override for testing wipe-day
     @AppStorage("devWipeDayOverride") private var devWipeDayOverride = false
-    // Persist when the user may next submit (seconds since 1970)
-    @AppStorage("nextWisdomSubmission") private var nextSubmissionTimestamp: Double = 0
     // For immediate deep-link on save:
     @Environment(\.openURL) private var openURL
     
@@ -18,17 +16,8 @@ struct AddWisdomView: View {
     // ← NEW: track whether a save request is in flight
     @State private var isSaving: Bool = false
     
-    // Countdown & Logo
-    @State private var glow: Bool = false
-    @State private var timeRemaining: TimeInterval = 0
-    @State private var logoOpacity: Double = 0
-    private let countdownTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let maxChars = 1000
     
-    /// The “next allowed” date
-    private var expiryDate: Date {
-        Date(timeIntervalSince1970: nextSubmissionTimestamp)
-    }
     /// Disable on the 1st of each month (MT)
     private var isWipeDay: Bool {
 #if DEBUG
@@ -38,17 +27,8 @@ struct AddWisdomView: View {
         cal.timeZone = TimeZone(identifier: "America/Denver")!
         return cal.component(.day, from: Date()) == 1
     }
-    /// Whether you can submit now
-    private var canSubmit: Bool {
-#if DEBUG
-        true
-#else
-        Date() >= expiryDate
-#endif
-    }
-    private var showThankYou: Bool {
-        !canSubmit
-    }
+    /// Posting is unlimited; the composer is always available.
+    private var canSubmit: Bool { true }
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -96,60 +76,11 @@ struct AddWisdomView: View {
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
             
-        } else if showThankYou {
-            thankYouView
-            
         } else {
             editorFormView
         }
     }
     
-    private var thankYouView: some View {
-        VStack(spacing: 16) {
-            Text("Thank you for your wisdom!")
-                .font(.custom("Palatino", size: 20))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-            
-            Image("logo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 250, height: 250)
-                .opacity(logoOpacity)
-                .shadow(color: .indigo.opacity(glow ? 10 : 0), radius: glow ? 30 : 0)
-            
-            Text("Next entry: \(timerString)")
-                .font(.caption)
-                .foregroundColor(.yellow)
-            
-#if DEBUG
-            Button("Submit Another") {
-                wisdomText = ""
-                nextSubmissionTimestamp = 0
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.white, lineWidth: 2)
-            )
-#endif
-        }
-        .onAppear {
-            logoOpacity = 0; glow = false
-            withAnimation(.easeIn(duration: 3.5)) { logoOpacity = 1 }
-            withAnimation(
-                Animation.easeInOut(duration: 1.5)
-                    .delay(1)
-                    .repeatForever(autoreverses: true)
-            ) { glow = true }
-        }
-        .onReceive(countdownTimer) { _ in
-            let remaining = expiryDate.timeIntervalSinceNow
-            timeRemaining = max(0, remaining)
-        }
-    }
     
     private var editorFormView: some View {
         VStack(spacing: 16) {
@@ -190,7 +121,7 @@ struct AddWisdomView: View {
                     .stroke(Color.white, lineWidth: 2)
             )
             
-            Text("You may only post once every 24 hours. Entries expire at the end of the month; choose wisely.")
+            Text("Entries expire at the end of the month; choose wisely.")
                 .font(.custom("Palatino", size: 14))
                 .foregroundColor(.yellow)
                 .multilineTextAlignment(.center)
@@ -223,10 +154,7 @@ struct AddWisdomView: View {
                     if let url = URL(string: "tmtl2://repository/\(id)") {
                         openURL(url)
                     }
-                    // then show the thank-you UI and schedule next submit…
-                    nextSubmissionTimestamp = Date().addingTimeInterval(24*3600).timeIntervalSince1970
                     wisdomText = ""
-                    scheduleWisdomReadyNotification(at: Date().addingTimeInterval(24*3600))
                 }
                 
                 
@@ -245,15 +173,7 @@ struct AddWisdomView: View {
         return cal.date(from: comps)!
     }
     
-    private var timerString: String {
-        let t = max(0, Int(timeRemaining))
-        return String(format: "%02d:%02d:%02d", t/3600, (t%3600)/60, t%60)
-    }
     
-    private func scheduleWisdomReadyNotification(at date: Date) {
-        NotificationScheduler.scheduleWisdomReady(at: date)
-    }
-
     
     
     struct AddWisdomView_Previews: PreviewProvider {
