@@ -12,6 +12,7 @@ struct AddWisdomView: View {
     @State private var errorMessage: String = ""
     @State private var showErrorAlert: Bool = false
     @FocusState private var editorFocused: Bool
+    @StateObject private var dictation = Dictation()
     
     // ← NEW: track whether a save request is in flight
     @State private var isSaving: Bool = false
@@ -90,6 +91,18 @@ struct AddWisdomView: View {
                 .padding(.horizontal)
             
             HStack(spacing: 20) {
+                Button {
+                    editorFocused = false
+                    dictation.toggle(current: wisdomText, onText: { wisdomText = $0 }) {
+                        errorMessage = $0
+                        showErrorAlert = true
+                    }
+                } label: {
+                    Image(systemName: dictation.isListening ? "mic.fill" : "mic")
+                        .font(.title3)
+                        .foregroundColor(dictation.isListening ? .red : .white)
+                }
+                .accessibilityLabel(dictation.isListening ? "Stop dictation" : "Dictate")
                 QuoteScanButton { append($0) }
                 Spacer()
                 Text("\(wisdomText.count)/\(maxChars)")
