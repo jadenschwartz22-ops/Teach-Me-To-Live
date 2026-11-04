@@ -53,8 +53,8 @@ final class Dictation: ObservableObject {
 
         task = recognizer.recognitionTask(with: request) { [weak self] result, error in
             DispatchQueue.main.async {
-                if let result {
-                    let said = result.bestTranscription.formattedString
+                // The result after stop can be empty on-device; never let it erase what was dictated.
+                if let said = result?.bestTranscription.formattedString, !said.isEmpty {
                     onText(current.isEmpty ? said : current + " " + said)
                 }
                 if error != nil || result?.isFinal == true {
