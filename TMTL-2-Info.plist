@@ -20,6 +20,8 @@
 			<string>None</string>
 		</dict>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo of a quote so you can post it as wisdom.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

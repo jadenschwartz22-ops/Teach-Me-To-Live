@@ -89,11 +89,14 @@ struct AddWisdomView: View {
                 .frame(height: 200)
                 .padding(.horizontal)
             
-            Text("\(wisdomText.count)/\(maxChars)")
-                .foregroundColor(wisdomText.count > maxChars ? .red : .gray)
-                .font(.caption)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.horizontal)
+            HStack(spacing: 20) {
+                QuoteScanButton { append($0) }
+                Spacer()
+                Text("\(wisdomText.count)/\(maxChars)")
+                    .foregroundColor(wisdomText.count > maxChars ? .red : .gray)
+                    .font(.caption)
+            }
+            .padding(.horizontal)
             
             Button {
                 attemptSaveWisdom()
@@ -127,6 +130,10 @@ struct AddWisdomView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
         }
+    }
+    
+    private func append(_ text: String) {
+        wisdomText = wisdomText.isEmpty ? text : wisdomText + "\n" + text
     }
     
     private func attemptSaveWisdom() {
