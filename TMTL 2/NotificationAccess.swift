@@ -7,7 +7,9 @@ import UserNotifications
 final class NotificationAccess: ObservableObject {
     static let shared = NotificationAccess()
 
-    @Published private(set) var isOff = false
+    @Published private(set) var status = UNAuthorizationStatus.notDetermined
+    var isOff: Bool { status == .denied }
+    var isOn: Bool { status == .authorized || status == .provisional || status == .ephemeral }
     @Published var showWhy = false
 
     private init() {
@@ -18,15 +20,19 @@ final class NotificationAccess: ObservableObject {
 
     /// Re-read the OS setting; also (re)registers for remote notifications when allowed.
     func refresh() async {
-        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
-        isOff = status == .denied
-        if status == .authorized || status == .provisional { UIApplication.shared.registerForRemoteNotifications() }
+        status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        if isOn { UIApplication.shared.registerForRemoteNotifications() }
         if status == .notDetermined { showWhy = true }
     }
 
     func request() async {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
         await refresh()
+    }
+
+    /// iOS owns the switch: ask while undecided, otherwise send the person to Settings.
+    func toggleTapped() {
+        if status == .notDetermined { Task { await request() } } else { openSettings() }
     }
 
     func openSettings() {

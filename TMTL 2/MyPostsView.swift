@@ -5,6 +5,7 @@ import FirebaseFirestore
 struct MyPostsView: View {
     @Environment(\.openURL) private var systemOpenURL: OpenURLAction
     @StateObject private var viewModel = MyPostsViewModel()
+    @ObservedObject private var notifications = NotificationAccess.shared
     @State private var showSearch = false
     @State private var searchText = ""
     @FocusState private var searchFieldFocused: Bool
@@ -158,6 +159,23 @@ struct MyPostsView: View {
         highlightedPostIDs.remove(postId)
     }
 
+    private var notificationsRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle(isOn: Binding(get: { notifications.isOn }, set: { _ in notifications.toggleTapped() })) {
+                Label("Notifications", systemImage: "bell.fill")
+                    .foregroundColor(.white)
+                    .font(.custom("Palatino", size: 17))
+            }
+            .tint(.indigo)
+            Text("New posts, the monthly top post, and your year in review.")
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
+        .neumorphic()
+        .padding(.horizontal, 16)
+        .padding(.bottom, 12)
+    }
+
     private var headerView: some View {
         VStack(spacing: 0) {
             Text("My Posts")
@@ -165,6 +183,8 @@ struct MyPostsView: View {
                 .font(.custom("Palatino", size: 28))
                 .padding(.top, 20)
                 .padding(.bottom, 8)
+
+            notificationsRow
 
             SearchBarView(
                 showSearch: $showSearch,
