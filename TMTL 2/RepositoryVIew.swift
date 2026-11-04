@@ -39,6 +39,13 @@ struct RepositoryView: View {
     let reportAction: (WisdomEntry) -> Void
     let blockAction: (WisdomEntry) -> Void
 
+    /// Live post with the highest score (ties: earliest). Nil unless someone scored >= 1.
+    private var topPost: WisdomEntry? {
+        wisdomList
+            .filter { $0.expiresAt > Date() && $0.score >= 1 }
+            .min { ($0.score, $1.createdAt) > ($1.score, $0.createdAt) }
+    }
+
     // Filtered array, based on searchText
     private var filteredWisdom: [WisdomEntry] {
         guard !searchText.isEmpty else { return wisdomList }
@@ -129,6 +136,31 @@ struct RepositoryView: View {
         }
     }
 
+    private func topPostCard(_ entry: WisdomEntry) -> some View {
+        Button { navigationPath = [entry.id] } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Label("Top this month", systemImage: "crown.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.yellow)
+                    Spacer()
+                    Text("\(entry.createdAt.formatted(.dateTime.month(.abbreviated).day())) · \(entry.score) ⚡")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                Text(entry.text)
+                    .font(.custom("Palatino", size: 18))
+                    .foregroundColor(.white)
+                    .lineLimit(4)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .neumorphic()
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+    }
+
     // MARK: – The scrollable list
     private var wisdomListView: some View {
         ScrollViewReader { proxy in
@@ -139,6 +171,7 @@ struct RepositoryView: View {
                     .id("top")
 
                 VStack(alignment: .leading, spacing: 20) {
+                    if searchText.isEmpty, let top = topPost { topPostCard(top) }
                     ForEach(filteredWisdom) { entry in
                         ZStack {
                             // hidden link for programmatic scroll
