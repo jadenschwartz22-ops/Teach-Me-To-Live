@@ -18,6 +18,7 @@ struct TMTL2Page: View {
     // NEW: control the rain emitter so it pauses off-tab and doesn't restart stacks
     @State private var rainOn = true
     @ObservedObject private var notifications = NotificationAccess.shared
+    @ObservedObject private var yearReview = YearInReview.shared
 
     private var isWipeDay: Bool {
 #if DEBUG
@@ -96,6 +97,7 @@ struct TMTL2Page: View {
                 if notifications.isOff {
                     notificationsBanner
                 }
+                YearInReviewCard(review: yearReview)
                 if isWipeDay {
                     WipeDayView(
                         lastMonthTop: viewModel.lastMonthTop,
@@ -177,6 +179,8 @@ struct TMTL2Page: View {
                     Task { await viewModel.load() }
                 }
 
+                Task { await yearReview.load() }
+
                 // keep your existing visuals
                 rainOn = true
             }
@@ -212,6 +216,7 @@ struct TMTL2Page: View {
             .alert(blockAlertMessage, isPresented: $showBlockAlert) {
                 Button("OK", role: .cancel) {}
             }
+            .sheet(isPresented: $yearReview.isPresented) { YearInReviewList(review: yearReview) }
             .onChange(of: viewModel.isLoading) { _, newValue in
                 print("👁‍🗨 TMTL2Page sees viewModel.isLoading = \(newValue)")
             }

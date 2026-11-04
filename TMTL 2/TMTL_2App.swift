@@ -148,6 +148,10 @@ struct TMTL2App: App {
                 }
             }
 
+        case "yearInReview":
+            // tmtl2://yearInReview → Repository → Year in Review list
+            Task { @MainActor in YearInReview.shared.open() }
+
         default:
             print("⚠️ Unknown deep-link host:", host)
         }

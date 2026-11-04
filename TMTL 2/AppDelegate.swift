@@ -84,7 +84,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             }
         }
 
-        if let type = userInfo["type"] as? String, type == "like",
+        if let type = userInfo["type"] as? String, type == "like" || type == "topPost",
            let postId = userInfo["wisdomId"] as? String,
            let url = URL(string: "tmtl2://repository/\(postId)") {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
@@ -113,6 +113,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                     NotificationCenter.default.post(name: .didSelectMyPost, object: nil, userInfo: ["postId": postId])
                 }
             }
+        case "yearInReview":
+            Task { @MainActor in YearInReview.shared.open() }
         case "wipeDay":
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .switchToRepositoryTab, object: nil)
