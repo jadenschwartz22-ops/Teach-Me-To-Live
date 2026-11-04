@@ -55,15 +55,13 @@ struct YearInReviewCard: View {
             Button { review.isPresented = true } label: {
                 HStack {
                     Image(systemName: "sparkles").foregroundColor(.yellow)
-                    Text("Year in Review \(String(review.year))")
+                    Text("Top posts of \(String(review.year))")
                         .font(.custom("Palatino", size: 18))
                         .foregroundColor(.white)
                     Spacer()
                     Image(systemName: "chevron.right").foregroundColor(.gray)
                 }
-                .padding(14)
-                .background(Color.yellow.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.yellow.opacity(0.6)))
+                .neumorphic()
                 .padding(.horizontal)
                 .padding(.bottom, 8)
             }
@@ -81,18 +79,24 @@ struct YearInReviewList: View {
             ZStack {
                 Color.black.ignoresSafeArea()
                 if let items = review.items {
-                    List(Array(items.enumerated()), id: \.element.id) { index, item in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("#\(index + 1) · \(item.score) ⚡")
-                                .font(.caption).foregroundColor(.yellow)
+                    List(Array(items.prefix(10).enumerated()), id: \.element.id) { index, item in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("#\(index + 1)").font(.headline).foregroundColor(.yellow)
+                                Spacer()
+                                if let date = item.createdAt {
+                                    Text(date.formatted(.dateTime.month(.abbreviated).day()))
+                                        .font(.caption).foregroundColor(.gray)
+                                }
+                                Text("\(item.score) ⚡").font(.caption.weight(.semibold)).foregroundColor(.yellow)
+                            }
                             Text(item.text)
                                 .font(.custom("Palatino", size: 18)).foregroundColor(.white)
-                            if let date = item.createdAt {
-                                Text(date.formatted(.dateTime.month(.wide).day()))
-                                    .font(.caption2).foregroundColor(.gray)
-                            }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .neumorphic()
                         .listRowBackground(Color.black)
+                        .listRowSeparator(.hidden)
                         .contextMenu { Button { Clipboard.copy(item.text) } label: { Label("Copy", systemImage: "doc.on.doc") } }
                     }
                     .listStyle(.plain)
@@ -101,7 +105,7 @@ struct YearInReviewList: View {
                     Text("Nothing here yet.").foregroundColor(.gray)
                 }
             }
-            .navigationTitle("Year in Review \(String(review.year))")
+            .navigationTitle("Top posts of \(String(review.year))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .toolbarColorScheme(.dark, for: .navigationBar)
