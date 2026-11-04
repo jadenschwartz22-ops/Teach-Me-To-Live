@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 struct MainTabView: View {
     @State private var selection: Int = 0
+    @ObservedObject private var notifications = NotificationAccess.shared
     var body: some View {
         ZStack {
             // ① Paint the entire screen (including behind status bar) black
@@ -12,6 +13,10 @@ struct MainTabView: View {
             CustomTabBarController(selection: $selection)
             // Let it extend under the bottom safe area as before
                 .edgesIgnoringSafeArea(.bottom)
+        }
+        .task { await notifications.refresh() }
+        .alert("Get a ping when someone shares wisdom", isPresented: $notifications.showWhy) {
+            Button("Continue") { Task { await notifications.request() } }
         }
     }
 }

@@ -1,7 +1,6 @@
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
-import UserNotifications
 
 struct MyPostsView: View {
     @Environment(\.openURL) private var systemOpenURL: OpenURLAction
@@ -9,16 +8,6 @@ struct MyPostsView: View {
     @State private var showSearch = false
     @State private var searchText = ""
     @FocusState private var searchFieldFocused: Bool
-
-    @AppStorage("hasAskedPushPermissionFromMyPosts")
-    private var hasAskedPushPermissionFromMyPosts = false
-    @State private var showPushPermissionAlert = false
-
-    @State private var notifyOnNewPost = NewPostNotifications.isEnabled
-    @State private var showPushDeniedAlert = false
-    /// Set while we write the toggle programmatically, so the resulting
-    /// onChange doesn't loop back into a permission request.
-    @State private var isSyncingNotifyToggle = false
 
     @State private var oldPosts: [WisdomEntry] = []
     @State private var highlightedPostIDs: Set<String> = []
@@ -63,34 +52,9 @@ struct MyPostsView: View {
             .onAppear {
                 viewModel.startListening()
                 oldPosts = viewModel.posts
-                if !hasAskedPushPermissionFromMyPosts {
-                    showPushPermissionAlert = true
-                }
-                syncNotifyToggle()
             }
             .onDisappear {
                 viewModel.stopListening()
-            }
-            .alert("Enable Notifications?", isPresented: $showPushPermissionAlert) {
-                Button("Yes, enable") {
-                    askForPushPermission()
-                    hasAskedPushPermissionFromMyPosts = true
-                }
-                Button("No, thanks", role: .cancel) {
-                    hasAskedPushPermissionFromMyPosts = true
-                }
-            } message: {
-                Text("Would you like to receive notifications when someone comments or likes your posts?")
-            }
-            .alert("Notifications are off", isPresented: $showPushDeniedAlert) {
-                Button("Open Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        systemOpenURL(url)
-                    }
-                }
-                Button("Not now", role: .cancel) {}
-            } message: {
-                Text("Turn on notifications for TMTL in iOS Settings to hear when someone posts.")
             }
             .onReceive(viewModel.$posts) { newPosts in
                 let oldByID = Dictionary(uniqueKeysWithValues: oldPosts.map { ($0.id, $0.commentCount) })
@@ -194,45 +158,6 @@ struct MyPostsView: View {
         highlightedPostIDs.remove(postId)
     }
 
-    /// System permission can be revoked in iOS Settings while we're backgrounded,
-    /// so re-read it before trusting the stored preference.
-    private func syncNotifyToggle() {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            let allowed = settings.authorizationStatus == .authorized
-                || settings.authorizationStatus == .provisional
-            DispatchQueue.main.async {
-                let resolved = allowed && NewPostNotifications.isEnabled
-                guard resolved != notifyOnNewPost else { return }
-                isSyncingNotifyToggle = true
-                notifyOnNewPost = resolved
-            }
-        }
-    }
-
-    private var notifyToggle: some View {
-        Toggle(isOn: $notifyOnNewPost) {
-            Text("Notify me when someone posts")
-                .foregroundColor(.white)
-                .font(.custom("Palatino", size: 15))
-        }
-        .tint(.indigo)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 8)
-        .onChange(of: notifyOnNewPost) { _, enabled in
-            guard !isSyncingNotifyToggle else {
-                isSyncingNotifyToggle = false
-                return
-            }
-            NewPostNotifications.setEnabled(enabled) { effective in
-                // Permission can be refused; reflect what actually took effect.
-                guard effective != enabled else { return }
-                isSyncingNotifyToggle = true
-                notifyOnNewPost = effective
-                showPushDeniedAlert = true
-            }
-        }
-    }
-
     private var headerView: some View {
         VStack(spacing: 0) {
             Text("My Posts")
@@ -240,8 +165,6 @@ struct MyPostsView: View {
                 .font(.custom("Palatino", size: 28))
                 .padding(.top, 20)
                 .padding(.bottom, 8)
-
-            notifyToggle
 
             SearchBarView(
                 showSearch: $showSearch,
@@ -263,31 +186,6 @@ struct MyPostsView: View {
         ToolbarItemGroup(placement: .keyboard) {
             Spacer()
             Button("Done") { searchFieldFocused = false }
-        }
-    }
-
-    private func askForPushPermission() {
-        let center = UNUserNotificationCenter.current()
-        center.getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .authorized, .provisional:
-                DispatchQueue.main.async {
-                    UIApplication.shared.registerForRemoteNotifications()
-                    NotificationScheduler.scheduleWisdomReadyIfPending()
-                }
-            default:
-                center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
-                    if granted {
-                        DispatchQueue.main.async {
-                            UIApplication.shared.registerForRemoteNotifications()
-                            NotificationScheduler.scheduleWisdomReadyIfPending()
-                        }
-                    }
-                }
-            }
-        }
-        if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
-            center.delegate = appDelegate
         }
     }
 

@@ -17,6 +17,7 @@ struct TMTL2Page: View {
     @State private var reportAlertMessage = ""
     // NEW: control the rain emitter so it pauses off-tab and doesn't restart stacks
     @State private var rainOn = true
+    @ObservedObject private var notifications = NotificationAccess.shared
 
     private var isWipeDay: Bool {
 #if DEBUG
@@ -48,6 +49,22 @@ struct TMTL2Page: View {
         Auth.auth().currentUser?.uid ?? ""
     }
 
+    private var notificationsBanner: some View {
+        HStack {
+            Text("Notifications are off. You'll miss new wisdom.")
+                .font(.footnote)
+                .foregroundColor(.white)
+            Spacer()
+            Button("Turn on") { notifications.openSettings() }
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(.yellow)
+        }
+        .padding(12)
+        .background(Color.gray.opacity(0.25), in: RoundedRectangle(cornerRadius: 8))
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+
     @State private var hasLoadedOnce = false
 
     @State private var countdownText = ""
@@ -75,6 +92,9 @@ struct TMTL2Page: View {
                         .padding(.bottom, 8)
                 } else {
                     Spacer().frame(height: 8)
+                }
+                if notifications.isOff {
+                    notificationsBanner
                 }
                 if isWipeDay {
                     WipeDayView(

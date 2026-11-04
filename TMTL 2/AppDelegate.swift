@@ -15,13 +15,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         Messaging.messaging().delegate = self
         UNUserNotificationCenter.current().delegate = self
         signInAnonymouslyAndSaveToken()
+        application.registerForRemoteNotifications()
         return true
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Messaging.messaging().apnsToken = deviceToken
         Swift.print("✅ APNs token set on FCM.")
-        ensureFCMTokenSaved()
+        PushRegistrar.ensureFCMTokenSaved()
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
@@ -39,15 +40,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 return
             }
             Swift.print("✅ Signed in anonymously as UID:", user.uid)
-        }
-    }
-
-    private func ensureFCMTokenSaved() {
-        Messaging.messaging().token { token, error in
-            guard error == nil, let token = token, let uid = Auth.auth().currentUser?.uid else { return }
-            Firestore.firestore().collection("users").document(uid).setData(["fcmToken": token], merge: true)
-            Messaging.messaging().subscribe(toTopic: "announcements", completion: nil)
-            Swift.print("✅ Ensured FCM token saved:", token)
+            PushRegistrar.ensureFCMTokenSaved()
         }
     }
 
@@ -55,11 +48,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let token = fcmToken else { return }
         Swift.print("✅ FCM refreshed token:", token)
-        if let uid = Auth.auth().currentUser?.uid {
-            let doc = Firestore.firestore().collection("users").document(uid)
-            doc.setData(["fcmToken": token], merge: true)
-        }
-        Messaging.messaging().subscribe(toTopic: "announcements", completion: nil)
+        PushRegistrar.save(token)
     }
 
     @objc
