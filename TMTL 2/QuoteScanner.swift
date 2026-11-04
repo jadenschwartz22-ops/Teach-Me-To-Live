@@ -82,6 +82,11 @@ private struct LiveTextImage: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIImageView, context: Context) {}
+
+    /// Take the space offered; a UIImageView's intrinsic size is the full photo (4032 px), which pushed the buttons off screen.
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UIImageView, context: Context) -> CGSize? {
+        CGSize(width: proposal.width ?? 300, height: proposal.height ?? 400)
+    }
 }
 
 private struct QuoteScanSheet: View {
