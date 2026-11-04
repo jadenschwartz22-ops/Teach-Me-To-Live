@@ -105,9 +105,10 @@ struct AddWisdomView: View {
                 .accessibilityLabel(dictation.isListening ? "Stop dictation" : "Dictate")
                 QuoteScanButton { append($0) }
                 Spacer()
-                Text("\(wisdomText.count)/\(maxChars)")
-                    .foregroundColor(wisdomText.count > maxChars ? .red : .gray)
+                Text(wisdomText.count > maxChars ? "Cut \(wisdomText.count - maxChars) characters" : "\(wisdomText.count)/\(maxChars)")
+                    .foregroundColor(wisdomText.count > maxChars ? .red : wisdomText.count > maxChars - 100 ? .yellow : .gray)
                     .font(.caption)
+                    .monospacedDigit()
             }
             .padding(.horizontal)
             

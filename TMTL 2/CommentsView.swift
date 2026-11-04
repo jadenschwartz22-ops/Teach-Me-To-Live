@@ -65,7 +65,7 @@ struct CommentsView: View {
             
             // ── Input Bar ──
             HStack(spacing: 12) {
-                FilteredTextEditor(text: $newComment)
+                FilteredTextEditor(text: $newComment, placeholder: "Add a comment…")
                     .frame(height: 40)
                     .cornerRadius(6)
                     .overlay(
