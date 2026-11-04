@@ -135,6 +135,7 @@ struct CommentsView: View {
             presentationMode.wrappedValue.dismiss()
         }
         
+        .copyToast()
         // ── Block & Report Alerts ──
         .alert(reportAlertMessage, isPresented: $showReportAlert) {
             Button("OK", role: .cancel) {}

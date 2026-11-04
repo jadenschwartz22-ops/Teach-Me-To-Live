@@ -25,6 +25,11 @@ highlightedIDs.contains(comment.id)
 cornerRadius: 4
 )
 .contextMenu {
+Button {
+Clipboard.copy(comment.text)
+} label: {
+Label("Copy", systemImage: "doc.on.doc")
+}
 // Report in red
 Button(role: .destructive) {
 onReport(comment, "Inappropriate content")

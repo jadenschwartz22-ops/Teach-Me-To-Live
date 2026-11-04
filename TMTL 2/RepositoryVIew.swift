@@ -53,6 +53,7 @@ struct RepositoryView: View {
             }
             .background(Color.black)      // ← fix 1/2
             .ignoresSafeArea()            // ← fix 2/2
+            .copyToast()
 
             // Alerts
             .alert("Daily limit reached", isPresented: $showLimitAlert) {
@@ -168,6 +169,9 @@ struct RepositoryView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             .contextMenu {
+                                Button { Clipboard.copy(entry.text) } label: {
+                                    Label("Copy", systemImage: "doc.on.doc")
+                                }
                                 Button(role: .destructive) { reportAction(entry) } label: {
                                     Label("Report", systemImage: "flag.fill")
                                 }
